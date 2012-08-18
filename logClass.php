@@ -15,6 +15,7 @@ class logger
   static public $log_sender;
   static private $log_recipient = "fake is the new real <postmaster@fakeisthenewreal.org>";
   static public $msec = FALSE;
+  static private $prefix = '';
 
   public static function log($str, $level=2) {
     # compare passed log level to that defined in the class
@@ -32,6 +33,7 @@ class logger
   }
 
   private static function encode_for_log($microsec, $str) {
+    $str = self::prefix . $str;
     if (self::$msec == TRUE):
       $m = microtime(true);
       $m = substr(round($m - floor($m), 4), 2);
@@ -41,7 +43,11 @@ class logger
     endif;
   }
 
-   # need non-empty output and a proper file opening
+  public static function set_prefix($prefix) {
+    self::$prefix = $prefix;
+  }
+
+  // need non-empty output and a proper file opening
   public static function save_log($str='') {
 
     $str = ($str) ? self::encode_for_log(self::$msec, $str): '' ;
