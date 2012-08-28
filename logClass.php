@@ -130,7 +130,7 @@ class logger
    *
    * @param string $prefix The string to precede each message
   */
-  public function set_prefix($prefix) {
+  public function set_prefix ($prefix) {
     $this->_prefix = $prefix;
   }
 
@@ -180,12 +180,10 @@ class logger
     if ( date('l') == $day && date('G') == $hour ):
       try {
         $log = self::get_logfile();
-        self::emailer($log . self::$output);
-        self::$output = "";
-        self::truncate_log();
+        $this->emailer($log . self::$output);
+        $this->truncate_log();
       } catch(Exception $e) {
         // Useful if server is set to email any result.
-        echo self::$output;
         echo $e->getMessage();
       }
     endif;
