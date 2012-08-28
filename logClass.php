@@ -37,22 +37,22 @@ class logger
   public $vocal = False; 
   
   public $log_sender;
-  private $log_recipient = '';
+  public $log_recipient = '';
   
   private $_prefix = '';
 
   // A few helpful shortcuts for formatting the time
   const FORMAT_YMD_SEC = 'y-m-d H:i:s';
   const FORMAT_YMD_MSEC = 'y-m-d H:i:s:u';
-  private $_format = FORMAT_YMD_SEC;
+  private $_format = self::FORMAT_YMD_SEC;
 
   private static $_default_perms = 0777;
 
   // The internal status, one of three constants.
   private $_status = '';
+  const _WRITE_FAILED = 0;
   const _OPEN_FAILED = 1;
   const _LOG_OPEN = 2;
-  const _OPEN_FAILED = 3;
 
   private $_messages = array(
       'writefail'   => 'The file could not be written to. Check that appropriate permissions have been set.',
@@ -60,9 +60,11 @@ class logger
       'openfail'    => 'The file could not be opened. Check permissions.',
   );
 
-  function __construct($log_file, $log_level) {
+  function __construct($log_file, $log_level, $params) {
     $this->_log_file = $log_file;
     $this->_log_level = $log_level;
+
+    $this->_set_params($params);
 
     // Create the directory if none exists.
     $logdir = dirname($log_file);
@@ -71,18 +73,30 @@ class logger
     }
 
     if (file_exists($this->_log_file) && !is_writable($this->_log_file)) {
-        $this->_status = self::_OPEN_FAILED;
+        $this->_status = self::_WRITE_FAILED;
         echo $this->_messages['writefail'];
         return;
     }
 
     if (($this->_fileHandle = fopen($this->_log_file, 'a'))) {
         $this->_status = self::_LOG_OPEN;
-        $this->log($this->_messages['opensuccess'], self::INFO);
+        $this->log($this->_messages['opensuccess'], self::DEBUG);
 
     } else {
         $this->_status = self::_OPEN_FAILED;
         echo $this->_messages['openfail'];
+    }
+  }
+
+  private function _set_param($name, $value) {
+    if (isset($this->{$name})) {
+      $this->{$name} = $value;
+    }
+  }
+
+  private function _set_params($params) {
+    foreach ($params as $name => $value) {
+      $this->_set_param($name, $value);
     }
   }
 
@@ -94,7 +108,7 @@ class logger
   */
   public function log($str, $level=self::INFO) {
     // compare passed log level to that defined in the class
-    if ($this->_status == self::_LOG_OPEN && $level <= $this->$_log_level):
+    if ($this->_status == self::_LOG_OPEN && $level <= $this->_log_level):
       try {
         $string = $this->_encode_for_log($str, $this->_format);
         
@@ -102,7 +116,7 @@ class logger
           echo $string;
         endif;
 
-        $this->write_line($string);
+        $this->_write_line($string);
 
       } catch (Exception $e) {
         echo $e->getMessage() . PHP_EOL . $str;
@@ -114,7 +128,7 @@ class logger
     $str = $this->_prefix . $str;
     $d = new DateTime();
 
-    return sprintf('%s\t%s' . PHP_EOL, $d->format($timeformat), $str);
+    return sprintf("%s\t%s" . PHP_EOL, $d->format($timeformat), $str);
   }
 
   /**
@@ -134,7 +148,7 @@ class logger
    * @param string $prefix The string to precede each message
   */
   public function set_prefix ($prefix) {
-    $this->_prefix = $prefix;
+    $this->_prefix = trim($prefix) . " ";
   }
 
   public function set_time_format ($format) {
@@ -142,23 +156,23 @@ class logger
   }
 
   private function get_logfile() {
-    return file_get_contents($this->$log_file);
+    return file_get_contents($this->_log_file);
   }
 
   // Delete the log
   private function truncate_log() {
-    $f = fopen($this->$log_file,'w');
+    $f = fopen($this->_log_file,'w');
     if ($f === false)
       throw new Exception("error truncating log file");
   }
 
   // Send off the log.
   private function emailer($log) {
-    $headers  = "From:" . $this->$log_sender . "\r\n";
+    $headers  = "From:" . $this->log_sender . "\r\n";
     $headers .= "X-Mailer:PHP " . phpversion() . "\r\n";
     $headers .= "Content-type:text/plain; charset=UTF-8";
 
-    if (mail($this->$log_recipient, $this->$_log_file, $log, $headers)):
+    if (mail($this->log_recipient, $this->_log_file, $log, $headers)):
       // Do nothing.
     else:
       throw new Exception("Error mailing the log.");
@@ -176,7 +190,7 @@ class logger
     if ( date('l') == $day && date('G') == $hour ):
       try {
         $log = $this->get_logfile();
-        $this->emailer($log . $this->$output);
+        $this->emailer($log . $this->_output);
         $this->truncate_log();
       } catch(Exception $e) {
         // Useful if server is set to email any result.
