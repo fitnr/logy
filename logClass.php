@@ -60,7 +60,7 @@ class logger
       'openfail'    => 'The file could not be opened. Check permissions.',
   );
 
-  function __construct($log_file, $log_level, $params) {
+  function __construct($log_file, $log_level, $params=array()) {
     $this->_log_file = $log_file;
     $this->_log_level = $log_level;
 
