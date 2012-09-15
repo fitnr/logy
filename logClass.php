@@ -164,6 +164,7 @@ class logger
     $f = fopen($this->_log_file,'w');
     if ($f === false)
       throw new Exception("error truncating log file");
+    fclose($f);
   }
 
   // Send off the log.
@@ -190,7 +191,6 @@ class logger
     if ( date('l') == $day && date('G') == $hour ):
       try {
         $log = $this->get_logfile();
-        $this->emailer($log . $this->_output);
         $this->truncate_log();
       } catch(Exception $e) {
         // Useful if server is set to email any result.
