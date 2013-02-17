@@ -112,7 +112,7 @@ class logger
       try {
         $string = $this->_encode_for_log($str, $this->_format);
         
-        if ($this->vocal == True):
+        if ($this->vocal === True):
           echo $string;
         endif;
 
