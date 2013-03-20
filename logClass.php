@@ -166,7 +166,7 @@ class logger
   }
 
   // Delete the log
-  private function truncate_log() {
+  private function _truncate_log() {
     $f = fopen($this->_log_file,'w');
     if ($f === false)
       throw new Exception("error truncating log file");
@@ -174,13 +174,14 @@ class logger
   }
 
   // Send off the log.
-  private function emailer($log) {
+  private function _email($log) {
     $headers  = "From:" . $this->log_sender . "\r\n";
     $headers .= "X-Mailer:PHP " . phpversion() . "\r\n";
     $headers .= "Content-type:text/plain; charset=UTF-8";
 
     if (mail($this->log_recipient, $this->_log_file, $log, $headers)):
       // Do nothing.
+    
     else:
       throw new Exception("Error mailing the log.");
     endif;
@@ -190,14 +191,20 @@ class logger
    * Sends an email if the program is run on a given date and day.
    *
    * @param string $day The day of week e.g. Monday
-   * @param string $hour The hour on 24 hour scale, e.g. 13 for 1 pm, 0 for midnight
+   * @param int $hour The hour on 24 hour scale, e.g. 13 for 1 pm, 0 for midnight
+   * @param int $min The maximum minutes past the hour to send the log.
+   * Default to 60, blank vals will send anytime in $hour. For scripts that run four times and hour, set to something under 15.
    * @return void
   */
-  public function email_log($day, $hour) {
-    if ( date('l') == $day && date('G') == $hour ):
+  public function email_log($day, $hour, $min=60) {
+    $cur_hr = intval(date('G'));
+    $cur_min = intval(date('i'));
+    if ( date('l') == $day && $cur_hr == $hour && $cur_min <= $min ):
       try {
         $log = $this->get_logfile();
-        $this->truncate_log();
+        $this->_email($log);
+
+        $this->_truncate_log();
       } catch(Exception $e) {
         // Useful if server is set to email any result.
         echo $e->getMessage();
