@@ -46,6 +46,8 @@ class logger
   const FORMAT_YMD_MSEC = 'y-m-d H:i:s:u';
   private $_format = self::FORMAT_YMD_SEC;
 
+  private $_line_format; // Set in __construct
+
   private static $_default_perms = 0777;
 
   // The internal status, one of three constants.
@@ -63,6 +65,8 @@ class logger
   function __construct($log_file, $log_level, $params=array()) {
     $this->_log_file = $log_file;
     $this->_log_level = $log_level;
+
+    $params['_line_format'] = "%s %s" . PHP_EOL;
 
     $this->_set_params($params);
 
@@ -128,7 +132,7 @@ class logger
     $str = $this->_prefix . $str;
     $d = new DateTime();
 
-    return sprintf("%s\t%s" . PHP_EOL, $d->format($timeformat), $str);
+    return sprintf($this->_line_format, $d->format($timeformat), $str);
   }
 
   /**
