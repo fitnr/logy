@@ -57,7 +57,7 @@ class logger
   const _LOG_OPEN = 2;
 
   private $_messages = array(
-      'writefail'   => 'The file could not be written to. Check that appropriate permissions have been set.',
+      'writefail'   => 'The log file could not be written to. Check that appropriate permissions have been set.',
       'opensuccess' => 'The log file was opened successfully.',
       'openfail'    => 'The file could not be opened. Check permissions.',
   );
@@ -78,7 +78,7 @@ class logger
 
     if (file_exists($this->_log_file) && !is_writable($this->_log_file)) {
         $this->_status = self::_WRITE_FAILED;
-        echo $this->_messages['writefail'];
+        echo $this->_prefix . $this->_messages['writefail'] . "\n";
         return;
     }
 
@@ -88,7 +88,7 @@ class logger
 
     } else {
         $this->_status = self::_OPEN_FAILED;
-        echo $this->_messages['openfail'];
+        echo $this->_prefix . $this->_messages['openfail'] . "\n";
     }
   }
 
