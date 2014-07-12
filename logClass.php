@@ -44,9 +44,9 @@ class logger
   // A few helpful shortcuts for formatting the time
   const FORMAT_YMD_SEC = 'y-m-d H:i:s';
   const FORMAT_YMD_MSEC = 'y-m-d H:i:s:u';
-  private $_format = self::FORMAT_YMD_SEC;
+  private $_timeformat = self::FORMAT_YMD_SEC;
 
-  private $_line_format = "%s %s"; // Set in __construct
+  private $_line_format = '%time$s %prefix$s $level$s %msg$s'; // Set in __construct
 
   private static $_default_perms = 0777;
 
@@ -70,6 +70,8 @@ class logger
 
     $this->_set_params($params);
 
+    $this->const_keys = $this->_const_keys();
+
     // Create the directory if none exists.
     $logdir = dirname($log_file);
     if (!file_exists($logdir)) {
@@ -90,6 +92,12 @@ class logger
         $this->_status = self::_OPEN_FAILED;
         echo $this->_prefix . $this->_messages['openfail'] . "\n";
     }
+  }
+
+  private function _const_keys() {
+    $reflection = new ReflectionClass($this);
+    $consts = $reflection->getConstants();
+    return array_combine($consts, array_keys($consts));
   }
 
   private function _set_param($name, $value) {
@@ -120,7 +128,7 @@ class logger
           echo $string;
         endif;
 
-        $this->_write_line($string);
+        $this->_write_line($string, $level);
 
       } catch (Exception $e) {
         echo $e->getMessage() . PHP_EOL . $str;
@@ -128,13 +136,53 @@ class logger
     endif;
   }
 
-  private function _encode_for_log($str, $timeformat) {
-    $str = $this->_prefix . $str;
+  public function debug($str) {
+    $this->log($str, self::DEBUG);
+  }
+
+  public function info($str) {
+    $this->log($str, self::INFO);
+  }
+
+  public function notice($str) {
+    $this->log($str, self::NOTICE);
+  }
+
+  public function warn($str) {
+    $this->log($str, self::WARN);
+  }
+
+  public function error($str) {
+    $this->log($str, self::ERR);
+  }
+
+  public function err($str) {
+    $this->error($str);
+  }
+
+  public function critical($str) {
+    $this->log($str, self::CRIT);
+  }
+
+  public function emergency($str) {
+    $this->log($str, self::EMERG);
+  }
+
+
+  private function _encode_for_log($str, $level) {
     $d = new DateTime();
 
-    $format = ($this->_line_format) ? $this->_line_format : "%s %s";
+    $args = array(
+      'time' => $d->format($_timeformat),
+      'msg' => $str,
+      'prefix' => $this->_prefix
+    );
 
-    return sprintf($format . PHP_EOL, $d->format($timeformat), $str);
+    // used named level if called for
+    if (strpos($this->_line_format, '%level$s'))
+      $args['level'] = $this->const_keys[$level];
+
+    return sprintfn($this->_line_format . PHP_EOL, $args);
   }
 
   /**
@@ -211,5 +259,29 @@ class logger
       }
     endif;
   }
+}
+
+function sprintfn($format, array $args = array()) {
+  // map of argument names to their corresponding sprintf numeric argument value
+  $arg_nums = array_slice(array_flip(array_keys(array(0 => 0) + $args)), 1);
+
+  // find the next named argument. each search starts at the end of the previous replacement.
+  for ($pos = 0; preg_match('/(?<=%)([a-zA-Z_]\w*)(?=\$)/', $format, $match, PREG_OFFSET_CAPTURE, $pos);):
+    $arg_pos = $match[0][1];
+    $arg_len = strlen($match[0][0]);
+    $arg_key = $match[1][0];
+
+    // programmer did not supply a value for the named argument found in the format string
+    if (! array_key_exists($arg_key, $arg_nums)):
+      user_error("sprintfn(): Missing argument '${arg_key}'", E_USER_WARNING);
+      return false;
+    endif;
+
+    // replace the named argument with the corresponding numeric one
+    $format = substr_replace($format, $replace = $arg_nums[$arg_key], $arg_pos, $arg_len);
+    $pos = $arg_pos + strlen($replace); // skip to end of replacement for next iteration
+  endfor;
+
+  return vsprintf($format, array_values($args));
 }
 ?>
