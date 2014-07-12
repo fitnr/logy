@@ -2,7 +2,7 @@
 
 /**
   * class of logging functions
-  * 
+  *
   * This loggering class should work for any twitter bot or cron job.
   * Strings are saved and output once to a file. The email_log function can be
   * set to email the log once a week on a specific day and time.
@@ -29,16 +29,16 @@ class logger
 
   // Holds the current threshold for logging
   public $_log_level = self::INFO;
-  
+
   // destination for these wonderful tidbits
   public $_log_file;
 
   // True will print messages to STDOUT
-  public $vocal = False; 
-  
+  public $vocal = False;
+
   public $log_sender;
   public $log_recipient = '';
-  
+
   private $_prefix = '';
 
   // A few helpful shortcuts for formatting the time
@@ -106,7 +106,7 @@ class logger
 
   /**
    * Save a single string to the log file
-   * 
+   *
    * @param string $tr The string to be logged.
    * @paran int $level The log severity level of the string.
   */
@@ -115,7 +115,7 @@ class logger
     if ($this->_status == self::_LOG_OPEN && $level <= $this->_log_level):
       try {
         $string = $this->_encode_for_log($str, $this->_format);
-        
+
         if ($this->vocal === True):
           echo $string;
         endif;
@@ -181,7 +181,7 @@ class logger
 
     if (mail($this->log_recipient, $this->_log_file, $log, $headers)):
       // Do nothing.
-    
+
     else:
       throw new Exception("Error mailing the log.");
     endif;
