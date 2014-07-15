@@ -33,6 +33,9 @@ class logger
   // destination for these wonderful tidbits
   public $_log_file;
 
+  // file permissions
+  const DEFAULT_PERMS = '0777';
+
   // True will print messages to STDOUT
   public $vocal = False;
 
@@ -46,9 +49,7 @@ class logger
   const FORMAT_YMD_MSEC = 'y-m-d H:i:s:u';
   private $_timeformat = self::FORMAT_YMD_SEC;
 
-  private $_line_format = '%time$s %prefix$s $level$s %msg$s'; // Set in __construct
-
-  private static $_default_perms = 0777;
+  private $_line_format = '%time$s %prefix$s %level$s %msg$s'; // Set in __construct
 
   // The internal status, one of three constants.
   private $_status = '';
@@ -66,8 +67,6 @@ class logger
     $this->_log_file = $log_file;
     $this->_log_level = $log_level;
 
-    $params['_line_format'] = "%s %s";
-
     $this->_set_params($params);
 
     $this->const_keys = $this->_const_keys();
@@ -75,7 +74,7 @@ class logger
     // Create the directory if none exists.
     $logdir = dirname($log_file);
     if (!file_exists($logdir)) {
-      mkdir($logdir, self::$_default_perms, true);
+      mkdir($logdir, self::DEFAULT_PERMS, true);
     }
 
     if (file_exists($this->_log_file) && !is_writable($this->_log_file)) {
@@ -102,7 +101,7 @@ class logger
 
   private function _set_param($name, $value) {
     if (isset($this->{$name})) {
-      $this->{$name} = $value;
+      $this->{$name} = strval($value);
     }
   }
 
@@ -122,7 +121,7 @@ class logger
     // compare passed log level to that defined in the class
     if ($this->_status == self::_LOG_OPEN && $level <= $this->_log_level):
       try {
-        $string = $this->_encode_for_log($str, $this->_format);
+        $string = $this->_encode_for_log($str, $level);
 
         if ($this->vocal === True):
           echo $string;
@@ -168,12 +167,11 @@ class logger
     $this->log($str, self::EMERG);
   }
 
-
   private function _encode_for_log($str, $level) {
     $d = new DateTime();
 
     $args = array(
-      'time' => $d->format($_timeformat),
+      'time' => $d->format($this->_timeformat),
       'msg' => $str,
       'prefix' => $this->_prefix
     );
@@ -202,11 +200,12 @@ class logger
    * @param string $prefix The string to precede each message
   */
   public function set_prefix ($prefix) {
-    $this->_prefix = trim($prefix) . " ";
+    $this->_prefix = trim(strval($prefix)) . " ";
   }
 
   public function set_time_format ($format) {
-    $this->_format = $format;
+    $this->_timeformat = strval($format);
+
   }
 
   private function get_logfile() {
