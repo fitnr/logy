@@ -80,17 +80,19 @@ class logger
 
     if (file_exists($this->_log_file) && !is_writable($this->_log_file)) {
         $this->_status = self::_WRITE_FAILED;
-        echo $this->_prefix . $this->_messages['writefail'] . "\n";
+        $this->vocal = true;
+        $this->err($this->_messages['writefail']);
         return;
     }
 
     if (($this->_fileHandle = fopen($this->_log_file, 'a'))) {
         $this->_status = self::_LOG_OPEN;
-        $this->log($this->_messages['opensuccess'], self::DEBUG);
+        $this->debug($this->_messages['opensuccess']);
 
     } else {
         $this->_status = self::_OPEN_FAILED;
-        echo $this->_prefix . $this->_messages['openfail'] . "\n";
+        $this->vocal = true;
+        $this->err($this->_messages['openfail']);
     }
   }
 
@@ -120,20 +122,19 @@ class logger
   */
   public function log($str, $level=self::INFO) {
     // compare passed log level to that defined in the class
-    if ($this->_status == self::_LOG_OPEN && $level <= $this->_log_level):
-      try {
-        $string = $this->_encode_for_log($str, $level);
+    
+    try {
+      $string = $this->_encode_for_log($str, $level);
 
-        if ($this->vocal === True):
-          echo $string;
-        endif;
+      if ($this->vocal === true)
+        echo $string;
 
+      if ($this->_status == self::_LOG_OPEN && $level <= $this->_log_level)
         $this->_write_line($string, $level);
 
       } catch (Exception $e) {
         echo $e->getMessage() . PHP_EOL . $str;
       }
-    endif;
   }
 
   public function debug($str) {
