@@ -251,9 +251,12 @@ class logger
     if ( date('l') == $day && $cur_hr == $hour && $cur_min <= $min ):
       try {
         $log = $this->get_logfile();
-        $this->_email($log);
 
-        $this->_truncate_log();
+        if ($log !== ''):
+          $this->_email($log);
+          $this->_truncate_log();
+        endif;
+
       } catch(Exception $e) {
         // Useful if server is set to email any result.
         echo $e->getMessage();
