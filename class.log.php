@@ -29,10 +29,10 @@ class logger
   const ALL    = 10; // All error messages
 
   // Holds the current threshold for logging
-  public $_log_level = self::INFO;
+  public $_level = self::INFO;
 
   // destination for these wonderful tidbits
-  public $_log_file;
+  public $_file;
 
   // file permissions
   const DEFAULT_PERMS = '0777';
@@ -40,8 +40,8 @@ class logger
   // True will print messages to STDOUT
   public $vocal = False;
 
-  public $log_sender;
-  public $log_recipient = '';
+  public $sender;
+  public $recipient;
 
   private $_prefix = '';
 
@@ -65,8 +65,8 @@ class logger
   );
 
   function __construct($log_file, $log_level, $params=array()) {
-    $this->_log_file = $log_file;
-    $this->_log_level = $log_level;
+    $this->_file = $log_file;
+    $this->_level = $log_level;
 
     $this->_set_params($params);
 
@@ -103,15 +103,13 @@ class logger
   }
 
   private function _set_param($name, $value) {
-    if (isset($this->{$name})) {
+    if (property_exists($this, $name))
       $this->{$name} = strval($value);
-    }
   }
 
   private function _set_params($params) {
-    foreach ($params as $name => $value) {
+    foreach ($params as $name => $value)
       $this->_set_param($name, $value);
-    }
   }
 
   /**
@@ -211,12 +209,12 @@ class logger
   }
 
   private function get_logfile() {
-    return file_get_contents($this->_log_file);
+    return file_get_contents($this->_file);
   }
 
   // Delete the log
   private function _truncate_log() {
-    $f = fopen($this->_log_file,'w');
+    $f = fopen($this->_file,'w');
     if ($f === false)
       throw new Exception("error truncating log file");
     fclose($f);
@@ -224,11 +222,11 @@ class logger
 
   // Send off the log.
   private function _email($log) {
-    $headers  = "From:" . $this->log_sender . "\r\n";
+    $headers  = "From:" . $this->sender . "\r\n";
     $headers .= "X-Mailer:PHP " . phpversion() . "\r\n";
     $headers .= "Content-type:text/plain; charset=UTF-8";
 
-    if (mail($this->log_recipient, $this->_log_file, $log, $headers)):
+    if (mail($this->recipient, $this->_file, $log, $headers)):
       // Do nothing.
 
     else:
@@ -248,8 +246,12 @@ class logger
   public function email_log($day, $hour, $min=60) {
     $cur_hr = intval(date('G'));
     $cur_min = intval(date('i'));
-    if ( date('l') == $day && $cur_hr == $hour && $cur_min <= $min ):
+    if (date('l') == $day && $cur_hr == $hour && $cur_min <= $min):
       try {
+
+        if (!object_get($this, 'sender') || !object_get($this, 'recipient'))
+          throw new Exception("Need both a sender and a recipient", 1);
+
         $log = $this->get_logfile();
 
         if ($log !== ''):
