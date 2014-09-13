@@ -208,6 +208,10 @@ class logger {
         return file_get_contents($this->_file);
     }
 
+    function level() {
+        return $this->_level;
+    }
+
     // Delete the log
     private function _truncate_log() {
         $f = fopen($this->_file,'w');
