@@ -63,7 +63,7 @@ class logger {
         'openfail'    => 'The file could not be opened. Check permissions.',
     );
 
-    function __construct($log_file, $log_level, $params=array()) {
+    function __construct($log_file, $log_level=logger::INFO, $params=array()) {
         $this->_file = $log_file;
         $this->_level = $log_level;
 
@@ -232,9 +232,8 @@ class logger {
         $headers .= "X-Mailer:PHP " . phpversion() . "\r\n";
         $headers .= "Content-type:text/plain; charset=UTF-8";
 
-        if (mail($this->recipient, $this->_file, $log, $headers)):
+        if (mail($this->recipient, basename($this->_file), $log, $headers)):
             // Do nothing.
-
         else:
             throw new Exception("Error mailing the log.");
         endif;
@@ -254,26 +253,26 @@ class logger {
         $cur_min = intval(date('i'));
 
         if (date('l') == $day && $cur_hr == $hour && $cur_min <= $min):
-
             try {
 
-                if (!object_get($this, 'sender') || !object_get($this, 'recipient'))
-                    throw new Exception("Need both a sender and a recipient", 1);
-
-                $log = $this->get_logfile();
-
-                if ($log !== ''):
-                    $this->_email($log);
-                    $this->_truncate_log();
-                endif;
+                $this->send_log();
 
             } catch(Exception $e) {
-
                 // Useful if server is set to email any result.
                 echo $e->getMessage();
-
             }
+        endif;
+    }
 
+    public function send_log() {
+        if (!object_get($this, 'sender') || !object_get($this, 'recipient'))
+            throw new Exception("Need both a sender and a recipient", 1);
+
+        $log = $this->get_logfile();
+
+        if ($log !== ''):
+            $this->_email($log);
+            $this->_truncate_log();
         endif;
     }
 }
