@@ -24,6 +24,7 @@ class logger {
     const NOTICE = 5; // Notice: normal but significant condition
     const INFO   = 6; // Informational: informational messages
     const DEBUG  = 7; // Debug: debug messages
+    const SILLY  = 8; // Debug: debug messages
     const ALL    = 10; // All error messages
 
     // Holds the current threshold for logging
@@ -120,7 +121,7 @@ class logger {
         try {
             $string = $this->_encode_for_log($str, $level);
 
-            if ($this->vocal === true)
+            if ($this->vocal == true)
                 echo $string;
 
             // compare passed log level to that defined in the class
@@ -174,8 +175,13 @@ class logger {
         );
 
         // used named level if called for
-        if (strpos($this->_line_format, '%level$s'))
-            $args['level'] = $this->const_keys[$level];
+        try {
+            if (strpos($this->_line_format, '%level$s'))
+                $args['level'] = $this->const_keys[$level];
+
+        } catch (Exception $e) {
+            $args['level'] = $level;
+        }
 
         return sprintfn($this->_line_format . PHP_EOL, $args);
     }
@@ -197,7 +203,7 @@ class logger {
      * @param string $prefix The string to precede each message
     */
     public function set_prefix ($prefix) {
-        $this->_prefix = trim(strval($prefix)) . " ";
+        $this->_prefix = trim(strval($prefix));
     }
 
     public function set_time_format ($format) {
