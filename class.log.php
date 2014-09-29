@@ -42,7 +42,7 @@ class logger {
     public $sender;
     public $recipient;
 
-    private $_prefix = '';
+    private $prefix = '';
 
     // A few helpful shortcuts for formatting the time
     const FORMAT_YMD_SEC = 'y-m-d H:i:s';
@@ -111,6 +111,10 @@ class logger {
             $this->_set_param($name, $value);
     }
 
+    public function get($param) {
+        return $this->{$param};
+    }
+
     /**
      * Save a single string to the log file
      *
@@ -171,7 +175,7 @@ class logger {
         $args = array(
             'time' => $d->format($this->_timeformat),
             'msg' => $str,
-            'prefix' => $this->_prefix
+            'prefix' => $this->prefix
         );
 
         // used named level if called for
@@ -203,7 +207,7 @@ class logger {
      * @param string $prefix The string to precede each message
     */
     public function set_prefix ($prefix) {
-        $this->_prefix = trim(strval($prefix));
+        $this->prefix = trim(strval($prefix));
     }
 
     public function set_time_format ($format) {
