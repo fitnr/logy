@@ -49,7 +49,7 @@ class logger {
     const FORMAT_YMD_MSEC = 'y-m-d H:i:s:u';
     private $_timeformat = self::FORMAT_YMD_SEC;
 
-    private $_line_format = '%time$s %prefix$s %level$s %msg$s'; // Set in __construct
+    private $line_format = '%time$s %prefix$s%level$s %msg$s'; // Set in __construct
 
     // The internal status, one of three constants.
     private $_status = '';
@@ -180,14 +180,14 @@ class logger {
 
         // used named level if called for
         try {
-            if (strpos($this->_line_format, '%level$s'))
+            if (strpos($this->line_format, '%level$s'))
                 $args['level'] = $this->const_keys[$level];
 
         } catch (Exception $e) {
             $args['level'] = $level;
         }
 
-        return sprintfn($this->_line_format . PHP_EOL, $args);
+        return sprintfn($this->line_format . PHP_EOL, $args);
     }
 
     /**
@@ -207,7 +207,7 @@ class logger {
      * @param string $prefix The string to precede each message
     */
     public function set_prefix ($prefix) {
-        $this->prefix = trim(strval($prefix));
+        $this->prefix = trim(strval($prefix)) . ' ';
     }
 
     public function set_time_format ($format) {
