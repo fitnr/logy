@@ -1,7 +1,7 @@
 <?php
 namespace fitnr\logger;
 
-require_once 'sprintfn.php';
+require_once 'utils.php';
 
 use DateTime;
 use ReflectionClass;
