@@ -6,7 +6,7 @@ require_once 'sprintfn.php';
 use DateTime;
 use ReflectionClass;
 
-use fitnr\utils;
+use fitnr\logger\utils;
 
 /**
  * logy class
