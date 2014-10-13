@@ -1,21 +1,27 @@
 <?php
-require_once __DIR__ . '/../utils/utils.php';
+namespace fitnr\logger;
+
+require_once 'sprintfn.php';
+
+use DateTime;
+use ReflectionClass;
+
+use fitnr\utils;
 
 /**
- * class of logging functions
+ * logy class
  *
  * This loggering class should work for any twitter bot or cron job.
  * Strings are saved and output once to a file. The email_log function can be
  * set to email the log once a week on a specific day and time.
- * Some ideas and code borrowed from https://github.com/katzgrau/KLogger/.
+ * Some ideas and code borrowed from https://github.com/katzgrau/KLogger/ (back in 2012).
 */
-class logger {
+class logy {
     /**
-     * Error severity, from low to high. From BSD syslog RFC, secion 4.1.1,
-     * Except for OFF, which is custom.
+     * Error severity, from low to high. From BSD syslog RFC, section 4.1.1,
+     * Except for SILLY, which is custom.
      * @link http://www.faqs.org/rfcs/rfc3164.html
     */
-    const OFF    = -1;// Log nothing at all
     const EMERG  = 0; // Emergency: system is unusable
     const ALERT  = 1; // Alert: action must be taken immediately
     const CRIT   = 2; // Critical: critical conditions
@@ -23,12 +29,12 @@ class logger {
     const WARN   = 4; // Warning: warning conditions
     const NOTICE = 5; // Notice: normal but significant condition
     const INFO   = 6; // Informational: informational messages
-    const DEBUG  = 7; // Debug: debug messages
-    const SILLY  = 8; // Debug: debug messages
+    const DEBUG  = 7; // debugging messages
+    const SILLY  = 8; // silly messages
     const ALL    = 10; // All error messages
 
     // Holds the current threshold for logging
-    public $_level = self::INFO;
+    public $threshold = self::INFO;
 
     // destination for these wonderful tidbits
     public $_file;
@@ -47,7 +53,7 @@ class logger {
     // A few helpful shortcuts for formatting the time
     const FORMAT_YMD_SEC = 'y-m-d H:i:s';
     const FORMAT_YMD_MSEC = 'y-m-d H:i:s:u';
-    private $_timeformat = self::FORMAT_YMD_SEC;
+    private $time_format = self::FORMAT_YMD_SEC;
 
     private $line_format = '%time$s %prefix$s%level$s %msg$s'; // Set in __construct
 
@@ -63,9 +69,9 @@ class logger {
         'openfail'    => 'The file could not be opened. Check permissions.',
     );
 
-    function __construct($log_file, $log_level=logger::INFO, $params=array()) {
+    function __construct($log_file, $threshold=logger::INFO, $params=array()) {
         $this->_file = $log_file;
-        $this->_level = $log_level;
+        $this->threshold = $threshold;
 
         $this->_set_params($params);
 
@@ -78,20 +84,20 @@ class logger {
             mkdir($logdir, self::DEFAULT_PERMS, true);
 
         if (file_exists($this->_file) && !is_writable($this->_file)):
-                $this->_status = self::_WRITE_FAILED;
-                $this->vocal = true;
-                $this->err($this->_messages['writefail']);
-                return;
+            $this->_status = self::_WRITE_FAILED;
+            $this->vocal = true;
+            $this->err($this->_messages['writefail']);
+            return;
         endif;
 
         if (($this->_fileHandle = fopen($this->_file, 'a'))):
-                $this->_status = self::_LOG_OPEN;
-                $this->debug($this->_messages['opensuccess']);
+            $this->_status = self::_LOG_OPEN;
+            $this->debug($this->_messages['opensuccess']);
 
         else:
-                $this->_status = self::_OPEN_FAILED;
-                $this->vocal = true;
-                $this->err($this->_messages['openfail']);
+            $this->_status = self::_OPEN_FAILED;
+            $this->vocal = true;
+            $this->err($this->_messages['openfail']);
         endif;
     }
 
@@ -121,59 +127,59 @@ class logger {
      * @param string $tr The string to be logged.
      * @param int $level The log severity level of the string.
     */
-    public function log($str, $level=self::INFO) {
+    public function log($msg, $level=self::INFO) {
         try {
-            $string = $this->_encode_for_log($str, $level);
+            $encoded = $this->_encode_for_log($msg, $level);
 
             if ($this->vocal == true)
-                echo $string;
+                echo $encoded;
 
             // compare passed log level to that defined in the class
-            if ($this->_status == self::_LOG_OPEN && $level <= $this->_level)
-                $this->_write_line($string, $level);
+            if ($this->_status == self::_LOG_OPEN && $level <= $this->threshold)
+                $this->_write_line($encoded, $level);
 
             } catch (Exception $e) {
-                echo $e->getMessage() . PHP_EOL . $str;
+                echo $e->getMessage() . PHP_EOL . $msg;
             }
     }
 
-    public function debug($str) {
-        $this->log($str, self::DEBUG);
+    public function debug($msg) {
+        $this->log($msg, self::DEBUG);
     }
 
-    public function info($str) {
-        $this->log($str, self::INFO);
+    public function info($msg) {
+        $this->log($msg, self::INFO);
     }
 
-    public function notice($str) {
-        $this->log($str, self::NOTICE);
+    public function notice($msg) {
+        $this->log($msg, self::NOTICE);
     }
 
-    public function warn($str) {
-        $this->log($str, self::WARN);
+    public function warn($msg) {
+        $this->log($msg, self::WARN);
     }
 
-    public function error($str) {
-        $this->log($str, self::ERR);
+    public function error($msg) {
+        $this->log($msg, self::ERR);
     }
 
-    public function err($str) {
-        $this->error($str);
+    public function err($msg) {
+        $this->error($msg);
     }
 
-    public function critical($str) {
-        $this->log($str, self::CRIT);
+    public function critical($msg) {
+        $this->log($msg, self::CRIT);
     }
 
-    public function emergency($str) {
-        $this->log($str, self::EMERG);
+    public function emergency($msg) {
+        $this->log($msg, self::EMERG);
     }
 
     private function _encode_for_log($str, $level) {
         $d = new DateTime();
 
         $args = array(
-            'time' => $d->format($this->_timeformat),
+            'time' => $d->format($this->time_format),
             'msg' => $str,
             'prefix' => $this->prefix
         );
@@ -187,7 +193,7 @@ class logger {
             $args['level'] = $level;
         }
 
-        return sprintfn($this->line_format . PHP_EOL, $args);
+        return utils\sprintfn($this->line_format . PHP_EOL, $args);
     }
 
     /**
@@ -211,7 +217,7 @@ class logger {
     }
 
     public function set_time_format ($format) {
-        $this->_timeformat = strval($format);
+        $this->time_format = strval($format);
     }
 
     private function get_logfile() {
@@ -219,10 +225,12 @@ class logger {
     }
 
     function level() {
-        return $this->_level;
+        return $this->threshold;
     }
 
-    // Delete the log
+    /** 
+     * Delete the log
+    */
     private function _truncate_log() {
         $f = fopen($this->_file,'w');
         if ($f === false)
@@ -230,7 +238,9 @@ class logger {
         fclose($f);
     }
 
-    // Send off the log.
+    /**
+     * Send off the log.
+    */
     private function _email($log) {
         $headers  = "From:" . $this->sender . "\r\n";
         $headers .= "X-Mailer:PHP " . phpversion() . "\r\n";
@@ -244,7 +254,7 @@ class logger {
     }
 
     /**
-     * Sends an email if the program is run on a given date and day.
+     * Emails the log if its a given hour and day of the week
      *
      * @param string $day The day of week e.g. Monday
      * @param int $hour The hour on 24 hour scale, e.g. 13 for 1 pm, 0 for midnight
@@ -258,7 +268,6 @@ class logger {
 
         if (date('l') == $day && $cur_hr == $hour && $cur_min <= $min):
             try {
-
                 $this->send_log();
 
             } catch(Exception $e) {
@@ -269,7 +278,7 @@ class logger {
     }
 
     public function send_log() {
-        if (!object_get($this, 'sender') || !object_get($this, 'recipient'))
+        if (!isset($this->sender) || !isset($this->recipient))
             throw new Exception("Need both a sender and a recipient", 1);
 
         $log = $this->get_logfile();
@@ -280,4 +289,3 @@ class logger {
         endif;
     }
 }
-?>
