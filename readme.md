@@ -18,7 +18,7 @@ $logger->debug('test');
 ````
 
 ## Expert
-````
+````php
 $params = array(
     'line_format' => '%time$s %prefix$s%level$s %msg$s', // Custom format the log line using a sprintf-like format
     'time_format' => 'y-m-d H:i:s', // a format accepted by date() - http://php.net/manual/en/function.date.php
