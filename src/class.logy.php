@@ -7,7 +7,7 @@ use DateTime;
 use ReflectionClass;
 use Exception;
 
-use fitnr\logger\utils\sprintfn;
+use fitnr\logger\utils;
 
 /**
  * logy class
@@ -97,7 +97,7 @@ class logy {
 
         else:
             $this->_status = self::_OPEN_FAILED;
-            if ($this->level > self::DEBUG):
+            if ($this->threshold >= self::DEBUG):
                 $this->vocal = true;
                 $this->err($this->_messages['openfail']);
             endif;
@@ -196,7 +196,7 @@ class logy {
             $args['level'] = $level;
         }
 
-        return sprintfn($this->line_format . PHP_EOL, $args);
+        return utils\sprintfn($this->line_format . PHP_EOL, $args);
     }
 
     /**
