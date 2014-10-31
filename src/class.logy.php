@@ -97,8 +97,10 @@ class logy {
 
         else:
             $this->_status = self::_OPEN_FAILED;
-            $this->vocal = true;
-            $this->err($this->_messages['openfail']);
+            if ($this->level > self::DEBUG):
+                $this->vocal = true;
+                $this->err($this->_messages['openfail']);
+            endif;
         endif;
     }
 
