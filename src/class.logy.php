@@ -7,7 +7,7 @@ use DateTime;
 use ReflectionClass;
 use Exception;
 
-use fitnr\logger\utils;
+use fitnr\logger\utils\sprintfn;
 
 /**
  * logy class
@@ -194,7 +194,7 @@ class logy {
             $args['level'] = $level;
         }
 
-        return utils\sprintfn($this->line_format . PHP_EOL, $args);
+        return sprintfn($this->line_format . PHP_EOL, $args);
     }
 
     /**
